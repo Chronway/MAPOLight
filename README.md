@@ -47,7 +47,7 @@ After that, the environment variable `SUMO_HOME` must be configured. If SUMO 1.1
 export SUMO_HOME='./.venv/lib/python3.10/site-packages/sumo'
 ```
 
-## Training 
+## Training_
 
 ```bash
 uv run train.py
@@ -90,6 +90,7 @@ uv run test2.py -h
 ```
 
 The above command will generate an outputs directory in the current folder, which contains several CSV files recording simulation data.
+
 
 
 
