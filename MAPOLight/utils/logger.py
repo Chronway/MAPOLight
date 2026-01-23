@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 27 17:39:00 2022
-
-
-"""
 
 import os
 from datetime import datetime
