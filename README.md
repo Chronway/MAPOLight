@@ -1,5 +1,7 @@
 ﻿# **MAPOLight**
-### This is the official implement of EAAI [*"Cooperative traffic signal control for a partially observed vehicular network using multi-agent reinforcement learning"*](https://doi.org/10.1016/j.engappai.2025.111813).
+### This is the updated and refined implementation of the EAAI paper [*"Cooperative traffic signal control for a partially observed vehicular network using multi-agent reinforcement learning"*](https://doi.org/10.1016/j.engappai.2025.111813).
+
+if you find it useful, plese cite:
 
 ## Setup Environment
 
@@ -70,3 +72,4 @@ uv run test2.py -h
 ```
 
 The above command will generate an outputs directory in the current folder, which contains several CSV files recording simulation data.
+
