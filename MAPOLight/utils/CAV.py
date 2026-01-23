@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 31 13:20:30 2022
-
-
-"""
 import traci
 import numpy 
 #from traci import TraCIException
