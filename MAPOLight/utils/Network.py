@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 31 13:21:57 2022
 
-@author: Wang Chong
-"""
 import os
 import sys
 import sumolib
