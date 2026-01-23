@@ -16,8 +16,6 @@ if 'SUMO_HOME' in os.environ:
 else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
-# LIBSUMO 'LIBSUMO_AS_TRACI'如果在环境变量里有非空值为true，否则为false
-
 from gymnasium import Env
 # from gym.spaces.box import Box
 import numpy as np
@@ -44,12 +42,6 @@ LIBSUMO = 'LIBSUMO_AS_TRACI' in os.environ
 
 def env(**kwargs):
     env = SumoEnvironmentPZ(**kwargs)
-    # print(env.observation_spaces)
-    # env = pad_action_space_v0(env)#action和obs顺序可变
-    # = pad_observations_v0(env) #可能有bug
-    # env = pad_action_space_v0(env) #可能有bug
-    # print(env.observation_spaces)
-    # print("+++++++++++++++++++++++++++++++++++++")
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
     return env
@@ -66,19 +58,16 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
             config_file,
             net_file: str,
             route_file: str,
-            # phases: dict = dict(),
-            # lights: dict = dict(),
             PR=0.05,
             out_csv_name: Optional[str] = None,
             use_gui: bool = False,
-            begin_time: int = 0,  # 可能只能设为0否则会出错
+            begin_time: int = 0,
             num_seconds: int = 20000,
             max_depart_delay: int = 100000,
             time_to_teleport: int = -1,
-            # time_to_load_vehicles=0,
             delta_time: int = 5,
             yellow_time: int = 3,
-            min_green: int = 5,  # min_green == delta_time比较好，可以保证时间比较充足。
+            min_green: int = 5,  # it is better to make sure that min_green == delta_time
             max_green: int = 50,
             single_agent: bool = False,
             reward_fn: Union[str, Callable] = 'diff-waiting-time',
@@ -91,7 +80,7 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
 
             collaborate: bool = False,  # cooperative traffic signal,share reward and observations
     ):
-        super(SumoEnvironment, self).__init__()  # ※bug:没有这句执行不下去，会报worker died error，还去网站问了
+        super(SumoEnvironment, self).__init__()
 
         self._net = net_file
         self._route = route_file
@@ -110,9 +99,7 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         assert delta_time > yellow_time, "Time between actions must be at least greater than yellow time."
 
         self.begin_time = begin_time
-        # self.phases = phases
         self.sim_max_time = num_seconds
-        # self.time_to_load_vehicles = time_to_load_vehicles  # number of simulation seconds ran in reset() before learning starts #后面可以统一为begin time
         self.delta_time = delta_time  # seconds on sumo at each step
         self.max_depart_delay = max_depart_delay  # Max wait time to insert a vehicle
 
@@ -133,7 +120,7 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
             print("########################################")
             print("####### CAV environment started!!! #####")
             print("########################################")
-            self.cav_set = CAVs(PR, net_file)  # penalty rate = 0.05 检查bug，去掉cav 2022.1.31
+            self.cav_set = CAVs(PR, net_file)
         else:
             print("########################################")
             print("#########  NO CAV environment!!! #######")
@@ -154,7 +141,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         self.sumo_seed = sumo_seed
         self.sumo_warnings = sumo_warnings
 
-        # self.lights_map = lights
         self.collaborate = collaborate
 
         self.label = str(SumoEnvironment.CONNECTION_LABEL)
@@ -184,16 +170,14 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
                                                   self.yellow_time,
                                                   self.min_green,
                                                   self.max_green,
-                                                  # self.phases,
                                                   self.begin_time,
                                                   self.reward_fn,
                                                   conn) for ts in self.ts_ids}
         conn.close()
 
-        self.vehicles = dict()  # 好像有什么用，删了报错
+        self.vehicles = dict()
         self.reward_range = (-float('inf'), float('inf'))
         self.metadata = {}
-        # self.spec = EnvSpec('SUMORL-v0') #没用到？
 
         self.run = 0
         self.metrics = []
@@ -201,33 +185,26 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         self.observations = {ts: None for ts in self.ts_ids}
         self.rewards = {ts: None for ts in self.ts_ids}
         self.last_measure = {ts: None for ts in self.ts_ids}
-        self.last_reward = {ts: None for ts in self.ts_ids}  # 不要 2022.9.9
+        self.last_reward = {ts: None for ts in self.ts_ids}
 
         if (self.cav_compare):
-            # self.last_diff = {ts: {'mean_diff':self.traffic_signals[ts].mean_diff,'std_diff':self.traffic_signals[ts].std_diff} for ts in self.ts_ids} #记录cav环境和全科观测环境的差异
             self.last_diff = {ts: {'correlation': self.traffic_signals[ts].correlation,
                                    'diffreward': self.traffic_signals[ts].diff_reward} for ts in
-                              self.ts_ids}  # 记录cav环境和全科观测环境的差异
+                              self.ts_ids}
 
-        # 为了组合reward
         if (self.collaborate):
             self.neignbors = dict()
             self.net = sumolib.net.readNet(net_file)
             self.getNeignbors()
             print(self.neignbors)
 
-        # raise NameError
-
     def _start_simulation(self):
         sumo_cmd = [self._sumo_binary,
-                    # '-c', self._cfg,
                     '-n', self._net,
                     '-r', self._route,
                     '--max-depart-delay', str(self.max_depart_delay),
                     '--waiting-time-memory', '10000',
                     '--time-to-teleport', str(self.time_to_teleport)]
-        # if self.begin_time > 0:
-        # sumo_cmd.append('-b {}'.format(self.begin_time)) #暂时不要，否则和自己设的冲突
         if self.sumo_seed == 'random':
             sumo_cmd.append('--random')
         else:
@@ -254,19 +231,12 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         if self.use_gui:
             self.sumo.gui.setSchema(traci.gui.DEFAULT_VIEW, "real world")
 
-    '''
-    调用方式：
-    (应该是有其他地方调用)
-    '''
-
     def reset(self, seed: Optional[int] = None, return_info=False, **kwargs):
-        # print("ding wei env reset");
         if self.run != 0:
             self.close()
             self.save_csv(self.out_csv_name, self.run)
         self.run += 1
         self.metrics = []
-        # self.cav_set.clear_cavs()#  感觉不需要了
 
         if seed is not None:
             self.sumo_seed = seed
@@ -275,7 +245,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
 
         if self.run == 0:
             self.ts_ids = list(self.sumo.trafficlight.getIDList())
-            # self.last_reward = {ts: 0 for ts in self.ts_ids}
 
         for ts in self.ts_ids:
             self.traffic_signals[ts] = TrafficSignal(self, ts, self.delta_time, self.yellow_time, self.min_green,
@@ -283,16 +252,15 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
             self.last_measure[ts] = 0.0
 
             if (self.cav_compare):
-                # self.last_diff[ts] = {'mean_diff':self.traffic_signals[ts].mean_diff,'std_diff':self.traffic_signals[ts].std_diff}
                 self.last_diff = {ts: {'correlation': self.traffic_signals[ts].correlation,
                                        'diffreward': self.traffic_signals[ts].diff_reward} for ts in
-                                  self.ts_ids}  # 记录cav环境和全科观测环境的差异
+                                  self.ts_ids}
                 self.traffic_signals[ts].last_measure_total = 0
 
         self.vehicles = dict()
 
         # Load vehicles
-        for _ in range(self.begin_time):  # 先加一点车,否则报NoneType错误
+        for _ in range(self.begin_time):
             self._sumo_step()
 
         if self.single_agent:
@@ -324,28 +292,17 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         else:
             self._apply_actions(action)  # next phase
             for ts in self.ts_ids:
-                self.traffic_signals[ts].update()  # 更新绿灯phase
+                self.traffic_signals[ts].update()
 
-        # self._sumo_step()
-        # 如果此处是self._sumo_step()，不能保证time_to_act一定是true。
-        # 因此_compute_observations和self._compute_rewards(函数返回值仅可用于测试，不可用于传递obs和reward值。
         self._run_steps()
 
         # observe new state and reward
         observation = self._compute_observations()
         reward = self._compute_rewards()
-        # 注：observation和reward可测试当前step是否update了数据。
-        # 方法为使用self._sumo_step()，然后有：
-        # (1)如果update了数据，即next_action_time = sim_step，则有len(obs)和len(reward)=agent number
-        # (2)否则，len(obs)和len(reward)=0
-
-        # print(len(observation))
-        # print("step reward:",reward)
 
         done = {'__all__': self.sim_step > self.sim_max_time}
         self._compute_lastmeasures()
         info = self._compute_info()
-        # self.metrics.append(info)
         self.last_reward = reward
         
 
@@ -355,20 +312,15 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
             return self.observations, self.rewards, done, done, info
 
     def _run_steps(self):
-        # step = 0 #for test
         time_to_act = False
         while not time_to_act:
             self._sumo_step()
-            # step += 1 #for test
             for ts in self.ts_ids:
-                self.traffic_signals[ts].update()  # update以后就可能切到新相位了
+                self.traffic_signals[ts].update()
                 if self.traffic_signals[ts].time_to_act:
                     time_to_act = True
-        # print("sim tt steps:",step) #for test
 
-    # action dict:{tsid1:action, tsid2:action...}
     def _apply_actions(self, actions):
-        # print("ding wei _apply_actions");
         """
         Set the next green phase for the traffic signals
         :param actions: If single-agent, actions is an int between 0 and self.num_green_phases (next green phase)
@@ -393,22 +345,18 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         return info
 
     def _compute_observations(self):
-        # print("ding wei _compute_observations")
-        # self.observations.update({ts: self.traffic_signals[ts].compute_observation() for ts in self.ts_ids if self.traffic_signals[ts].time_to_act})
-        computed = False  ####此处是否要测试一下observation是否有不同再决定这个flag要不要？☆☆☆☆潜在bug
+        computed = False
         for ts in self.ts_ids:
             if self.traffic_signals[ts].time_to_act:
-                if (self.cav_env and (not computed)):  # compute: only count once is enough
+                if (self.cav_env and (not computed)):
                     self.cav_set.update_detects()
                     computed = True
                 self.observations.update({ts: self.traffic_signals[ts].compute_observation()})
 
-        # self.observation_size_wrapper();
         return {ts: self.observations[ts].copy() for ts in self.observations.keys() if
                 self.traffic_signals[ts].time_to_act}
 
     def _compute_rewards(self):
-        # print("ding wei _compute_rewards");
         self.rewards.update({ts: self.traffic_signals[ts].compute_reward() for ts in self.ts_ids if
                              self.traffic_signals[ts].time_to_act})
 
@@ -422,45 +370,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
 
     def _compute_lastmeasures(self):
         self.last_measure.update({ts: self.traffic_signals[ts].compute_lastmeasure() for ts in self.ts_ids})
-        # return {ts: self.last_measure[ts] for ts in self.last_measure.keys()}
-
-    '''wrapper for pettingzooenv
-    def smaller_size(self,observation):
-        ob_size,max_size = 1,1
-        ob_shape = np.shape(observation)
-        size_shape = np.shape(self.max_obs)
-        
-        assert len(ob_shape)==len(size_shape),"dim size not equal!"
-
-        for dim in ob_shape:
-            ob_size = ob_size*dim
-
-        for dim in self.max_obs:
-            max_size = max_size*dim
-
-        if(ob_size<max_size): # smaller will add size wrapper
-            #print("is smaller!!!",ob_shape)
-            return True
-        elif(ob_size>max_size):
-            self.max_size=ob_shape
-        return False
-    
-    #important: agents should have same obs space size:
-    def observation_size_wrapper(self):
-        self.observations.update({ts:self.change_obshape(self.observations[ts]) for ts in self.ts_ids if(self.smaller_size(self.observations[ts]))})
-
-    #high dimension state (>1 dim) not implement
-    def change_obshape(self,observation:np.ndarray):
-        #@TODO:high dim implementation
-        #if(len(np.shape(observation))>1):
-            #np.reshape(observation,1)
-        #高维思路：转成一维矩阵然后再转回高维矩阵
-        #print(np.shape(observation))
-        #print(np.shape(np.zeros(self.max_obs[0]-np.shape(observation)[0])))
-        #print(np.shape(np.concatenate((observation,np.zeros(self.max_obs[0]-np.shape(observation)[0])),axis = 0)))
-        #print("############")
-        return np.concatenate((observation,np.zeros(self.max_obs[0]-np.shape(observation)[0])),axis = 0)
-    '''
 
     @property
     def observation_space(self):
@@ -478,28 +387,19 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
 
     def _sumo_step(self):
         self.sumo.simulationStep()
-        if (self.cav_env):  # 定义了车联网环境再跑
-            self.cav_set.update_observations()  # 更新三集合：车集合，cav车集合，cav探测到的车集合
+        if (self.cav_env):
+            self.cav_set.update_observations()
 
     def _compute_step_info(self):
-        # for ts in self.ts_ids:
-        #    print(self.last_diff[ts]['diffreward'])
         return {
             'step_time': self.sim_step,
             'reward': self.last_reward[self.ts_ids[0]],
             'total_stopped': sum(self.traffic_signals[ts].get_total_queued() for ts in self.ts_ids),
             'total_wait_time': sum(self.last_measure[ts] for ts in self.ts_ids),
-            # 'avg_wait_time': sum(self.last_measure[ts] for ts in self.ts_ids) / len(self.sumo.vehicle.getIDList()), #可能除0
             'avg_wait_time': np.mean([self.last_measure[ts] for ts in self.ts_ids]),
             'avg_speed': np.mean([self.sumo.vehicle.getSpeed(vid) for vid in self.sumo.vehicle.getIDList()]),
-
-            # 'mean_diff_obs':np.mean([self.last_diff[ts]['mean_diff']['obs'] for ts in self.ts_ids]),#比较cav环境下和全观测环境下的obs和reward(waits)的差值
-            # 'mean_diff_wait':np.mean([self.last_diff[ts]['mean_diff']['waits'] for ts in self.ts_ids]),
-            # 'std_diff_obs':np.mean([self.last_diff[ts]['std_diff']['obs'] for ts in self.ts_ids]),#比较cav环境下和全观测环境下的obs和reward(waits)的std差值
-            # 'std_diff_wait':np.mean([self.last_diff[ts]['std_diff']['waits'] for ts in self.ts_ids]),
             'correlation_obs': np.nanmean([self.last_diff[ts]['correlation']['obs'] for ts in
                                            self.ts_ids]) if self.cav_compare else 'COMPARE OFF',
-            # 比较cav环境下和全观测环境下的obs和reward(waits)的std差值
             'correlation_wait': np.nanmean([self.last_diff[ts]['correlation']['waits'] for ts in
                                             self.ts_ids]) if self.cav_compare else 'COMPARE OFF',
             'diff_reward': np.mean([self.last_diff[ts]['diffreward']['result'] for ts in
@@ -536,16 +436,12 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         if not LIBSUMO:
             traci.switch(self.label)
         traci.close()
-        #        if self.disp is not None:
-        #            self.disp.stop()
-        #            self.disp = None
         self.sumo = None
 
     def __del__(self):
         self.close()
 
     def save_csv(self, out_csv_name, run):
-        # print("ding wei save_csv");
         if out_csv_name is not None:
             df = pd.DataFrame(self.metrics)
             print("save csv to:", out_csv_name + '_run{}'.format(run) + '.csv')
@@ -555,7 +451,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         nodes = self.net.getNodes()
         for node in nodes:
             if (node.getID() in self.ts_ids):
-                # print("---",node.getID())
                 neignbors = node.getNeighboringNodes()
                 neignborset = set()
                 for neignbor in neignbors:
@@ -574,7 +469,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
             neignbor_weight = (1 - center_weight) / len(neirewards)
         else:
             neignbor_weight = 0
-        # weighted_reward = center_weight * self.rewards[tid]
         weighted_reward = center_weight * self.rewards[mytid]
 
         # print("tid:",mytid,"neignbors:",neignbor_tids,"   neignbor weight:",neignbor_weight)
@@ -594,11 +488,6 @@ class SumoEnvironment(Env):  # (MultiAgentEnv):
         return weighted_reward
 
 
-"""
-该类用于包装agents
-"""
-
-
 class SumoEnvironmentPZ(AECEnv, EzPickle):
     metadata = {
         'render.modes': ['human', 'rgb_array'],
@@ -608,7 +497,7 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
 
     def __init__(self, **kwargs):
         #        super(SumoEnvironmentPZ,self).__init__()
-        EzPickle.__init__(self, **kwargs)  # 对象序列化与反序列化，将对象序列化为二进制文本。用于再造一个对象python pickle unpickle
+        EzPickle.__init__(self, **kwargs)
         self._kwargs = kwargs
 
         self.seed()
@@ -617,17 +506,11 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         self.agents = self.env.ts_ids
         self.possible_agents = self.env.ts_ids
 
-        self._agent_selector = agent_selector(self.agents)  # agent selector 是一个迭代器类，参数是agent list
+        self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.reset()
         # spaces
         self.action_spaces = {a: self.env.action_spaces(a) for a in self.agents}
         self.observation_spaces = {a: self.env.observation_spaces(a) for a in self.agents}
-
-        # for test===========#
-        # self.pz_step = 0
-        # self.resets = 0
-        # self.acc_step = 0
-        # ===================#
 
         # dicts
         self.rewards = {a: 0 for a in self.agents}
@@ -653,10 +536,6 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         self.truncations = {agent: False for agent in self.agents}
         self.infos = {agent: {} for agent in self.agents}
 
-        # for test
-        # self.resets = self.resets + 1
-        # self.pz_step = 0 #每轮更新pettingzoo step
-
     def observation_space(self, agent):
         return self.observation_spaces[agent]
 
@@ -664,10 +543,6 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         return self.action_spaces[agent]
 
     def observe(self, agent):
-        # print(self.env.observations)
-        # print("========")
-        # print(agent)
-        # print("========")
         obs = self.env.observations[agent].copy()
         return obs
 
@@ -684,27 +559,6 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         self.env.save_csv(out_csv_name, run)
 
     def step(self, action):
-        # self.pz_step = self.pz_step + 1
-        # self.acc_step = self.acc_step + 1
-        # print("pz step:",self.pz_step)
-        # print("acc pz step:",self.acc_step)
-        # print("pz resets:",self.resets)
-        # print("env sim step:",self.env.sim_step)
-        # print("dones:",self.dones)
-        # print("sim max time:",self.env.sim_max_time)
-        # sim step > sim max time之后，就会self.dones = {True}
-        # 然后，self.was_done_step(action)就会逐渐删掉reward
-        # 最后reward变成{}
-        # ================================================#
-        # 目前弄清楚的是：2022.9.25
-        # sim step > max sim step 以后 dones={True}
-        # 因为dones={True}，会有reset() → pz step = 0；sim step = 0
-        # pz step和 sim step 大致应该是4:1的关系。但是，sim有一个time_to_load_vehicle = 10s，需要减掉。
-        # 因此，有pz step = 36, sim step = 19(19-10=9,9*4=36)
-        # 又如：pz step last agent: 352
-        # sim step last agent: 98.0 98-10=88,88*4 = 352
-        # 4是traffic signal的id数
-        # ================================================#
         if self.terminations[self.agent_selection] or self.truncations[self.agent_selection]:
             self._was_dead_step(action)
             return
@@ -713,29 +567,15 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
             raise Exception('Action for agent {} must be in Discrete({}).'
                             'It is currently {}'.format(agent, self.action_spaces[agent].n, action))
         self.env._apply_actions({agent: action})
-        if self._agent_selector.is_last():  # 最后一个agent
-            # 本句运行结束时time_to_act 必然是true
-            # 执行步数恒等于delta_time
+        if self._agent_selector.is_last():
             self.env._run_steps()
 
             self.env._compute_observations()
-            self.rewards = self.env._compute_rewards()  # 此时time_to_act 必然是true，因此必有更新
-
-            # ("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            # "两者必须一致"
-            # print("rewards:",rewards)
-            # print("env rewards:",self.env.rewards)
-            # print("==================================")
-            # ☆如果说self.env._run_steps()不能保证time_to_act 必然是true，则有以下结论
-            # self.env._compute_observations()和self.env._compute_rewards()的返回值仅可用于测试，不可用于传递obs和reward值。
-            # 测试指测试当前step是否update了数据。
-            # (1)如果update了数据，即next_action_time = sim_step，则有len(obs)和len(reward)=agent number
-            # (2)否则，len(obs)和len(reward)=0
-            # self.rewards = self.env.rewards
+            self.rewards = self.env._compute_rewards()
 
             self.env._compute_lastmeasures()
             self.env._compute_info()
-            self.env.last_reward = self.rewards.copy()  # copy极为重要，否则是传递指针，后面clear reward把reward给清零了 #此处应该是env.reward，否则reward可能有{}。此处取返回值似乎不妥。
+            self.env.last_reward = self.rewards.copy()
         else:
             self._clear_rewards()
 
@@ -744,5 +584,5 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         self.truncations = {a: done for a in self.agents}
 
         self.agent_selection = self._agent_selector.next()
-        self._cumulative_rewards[agent] = 0  # 只需要存即时reward，所以清零也无妨
+        self._cumulative_rewards[agent] = 0
         self._accumulate_rewards()

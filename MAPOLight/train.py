@@ -71,7 +71,6 @@ def main(run, net, pr):
         out_csv_name=None,
         use_gui=False,
         num_seconds=num_second,
-        # time_to_load_vehicles=10,
         begin_time=10,
         max_depart_delay=0,
         cav_env=enable_cv,  # has cav env
@@ -111,7 +110,6 @@ def main(run, net, pr):
               .resources(num_gpus=1, num_cpus_per_worker=1))
 
     reporter = CLIReporter(
-        # 详见ray.tune.report,
         metric_columns=["total_loss", "training_iteration", "episode_reward_mean", "timesteps_this_iter",
                         "timesteps_total", "episodes_total"]
     )
@@ -125,9 +123,8 @@ def main(run, net, pr):
             verbose=3,
             checkpoint_config=air.CheckpointConfig(num_to_keep=2, checkpoint_frequency=1,),
             progress_reporter=reporter,
-            # storage_path=f'/data/folder1/folder2'
+            # storage_path=f'/data/folder1/folder2'  # change output folder by changing it
         ),
-        # tune_config=tune.TuneConfig(time_budget_s=3600 * 24 * 3)
     ).fit()
 
     ray.shutdown()

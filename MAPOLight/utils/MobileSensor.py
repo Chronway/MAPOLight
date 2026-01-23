@@ -20,12 +20,11 @@ from .CAV import CAV
 # import CAV
 
 CELL_NUM = 60
-CELL_LENGTH = 5  # TODO： 统一网格数目或者网格长度
+CELL_LENGTH = 5
 # LANE_LENGTH = 300
 MAX_SPEED = 50
 
 
-# 所有正在运行的CAV
 class CAVs:
     def __init__(self, PR, netfile="", debug=False):
         self.PR = PR  # penetration rate
@@ -34,40 +33,27 @@ class CAVs:
         self.cavs = set()  # cav objects set
         self.detected_vids = set()  # cav detected vehicles set
         if debug:
-            self.network = Network(netfile)  # 这个参数后面应该是传递进来的
+            self.network = Network(netfile)
         # self.tls_state = None
 
     def get_allvids(self):
-        running_vechicles = traci.vehicle.getIDList()  # 可能还有simulation 的需要对比
+        running_vechicles = traci.vehicle.getIDList()
         return set(running_vechicles)
 
     def get_cavs(self):
-        '''
-        每个仿真步开始时都维护一次CAV集合:
-        1) 以免有CAV离开路网造成报错
-        2) 根据渗透率选择新的CAV加入集合
-        '''
         step_cavs = set()
-        # 新加入CAV
         insert_vehs = np.array(traci.simulation.getDepartedIDList())
-        # print("insert_vehs:",insert_vehs)
         rnd = np.random.rand(len(insert_vehs))
-        mask = rnd < self.PR  # rnd是长度为insert veh的随机数组，mask是True/False数组
+        mask = rnd < self.PR
         # print(mask)
-        new_vids = insert_vehs[mask]  # 这个mask是一个数字
+        new_vids = insert_vehs[mask]
         # print("new_vehs:",insert_vehs)
         # print(len(new_vehs)/(len(insert_vehs)+1))
 
-        cavids = self.cavids & self.running_vids | set(new_vids)  # &优先级高于|
+        cavids = self.cavids & self.running_vids | set(new_vids)
 
         for cavid in cavids:
             step_cavs.add(CAV(vid=cavid, radius=40))
-        # 改颜色，考虑暂时不用
-        # for cav in step_cavs:
-        #    try:
-        #        traci.vehicle.setColor(cav.vid, (238, 130, 238))
-        #    except Exception as e:
-        #        print("cavid not include:",str(e))
         return cavids, step_cavs  # first is id of cavs, second are cav objects
 
     def get_detectvids(self):
@@ -86,19 +72,6 @@ class CAVs:
     def update_observations(self):
         self.running_vids = self.get_allvids()
         self.cavids, self.cavs = self.get_cavs()
-        # self.detected_vids = self.get_detectvids() #此处没有必要不停地update
-
-        # for test
-        # print("all vids:",self.running_vids,)
-        # print("cavids:",self.cavids)
-        # print("detected vids:",self.detected_vids)
-        # print("cavs:",len(self.cavs))
-        # print("all len:",len(self.running_vids))
-        # print("all det len:",len(self.detected_vids))
-        # print("diff:",len(self.running_vids)-len(self.detected_vids))
-        # assert len(self.detected_vids)-len(det_vids_test)==0
-
-    # only update before compute observations
     def update_detects(self):
         self.detected_vids = self.get_detectvids()
 
@@ -117,19 +90,10 @@ class CAVs:
 
     # maintain()->get_state()
     def update(self):
-        self.update_observations()  # 更新路网中的cav车辆信息
+        self.update_observations()
         self.tls_state = self.get_mask()
 
-    # 遍历cav list中的所有车,判断coord是否在其中
-    # 复数是contain
-    # @DeprecationWarning("will remove in future!")
     def __contain(self, coord):
-        # exist_vehs = traci.vehicle.getIDList()
-        # print(exist_vehs)
-        # print("==================")
-        # print(self.cav_list)
-        # print("------------------")
-        # coord_x, coord_y = coord
         for cav in self.cavs:
             # if cav.vid in exist_vehs:
             if cav._iscontain(coord):
@@ -154,7 +118,7 @@ class CAVs:
             # print(type(one_dim))
             # print("???????????????????????")
             # print(one_dim.shape)
-            tls_mask.update({tls: one_dim})  # 拼成一维矩阵
+            tls_mask.update({tls: one_dim})
         return tls_mask
 
     def coverage(self):

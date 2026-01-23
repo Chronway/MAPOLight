@@ -10,7 +10,6 @@ from datetime import datetime
 import tempfile
 from ray.tune.logger import UnifiedLogger
 
-#本函数暂时用不上，要改文件夹改环境变量即可
 def custom_log_creator(custom_path, custom_str):
 
     timestr = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")

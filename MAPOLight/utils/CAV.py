@@ -18,40 +18,12 @@ class CAV:
     def id(self):
         return self.vid
 
-    def _iscontain(self, coord): #单车是contains
-        '''
-        判断坐标是否在车辆的探测范围内
-        :param coord: 待判断坐标
-        :return: boolean, 在探测范围内返回true
-        '''
-        #coord_x, coord_y = coord
-        #try:
-        #    self.x_pos, self.y_pos = traci.vehicle.getPosition(self.vid) #vhicle.getposition id是很重要的参数，需要获得该车的位置，而不是随意命名一个index的车辆id的位置
-        #except TraCIException as e: #防止vid找不到
-        #    print("_iscontain:",str(e))
-        #    return False
-        
-        #self.x_pos, self.y_pos = traci.vehicle.getPosition(self.vid) #vhicle.getposition id是很重要的参数，需要获得该车的位置，而不是随意命名一个index的车辆id的位置
+    def _iscontain(self, coord):
         self.pos = numpy.array(traci.vehicle.getPosition(self.vid))
         
-        #print("c",coord)
-        #print("rc:",(self.x_pos,self.y_pos))
-        #if (coord_x - self.x_pos)*(coord_x - self.x_pos) + (coord_y - self.y_pos)*(coord_y - self.y_pos) <= self.radius*self.radius:
         distance = numpy.linalg.norm(self.pos-numpy.array(coord))
 
-        if distance <= self.radius:#distance
-            #print("r*r:",self.radius*self.radius)
-            #print("veh coordx:",coord_x,"veh coordy:",coord_y)
-            #print("self coordx:",self.x_pos,"self coordy:",self.y_pos)
-            #print("=========================")
-            
-            #print("========================")
-            #print(self.pos)
-            #print(coord)
-            #print(distance)
-            #print(self.radius)
-            #print("-----------------------")
-            
+        if distance <= self.radius:#distance            
             return True
         else:
             return False

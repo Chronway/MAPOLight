@@ -54,7 +54,6 @@ def train_process():
     plt.show()
 
 def get_folder_data(folder_path):
-    # 获取结果文件夹内的相关指标
     files = os.listdir(folder_path)
     files.sort(key=lambda x: int(re.match('\D+(\d+)\.csv', x).group(1)))
 

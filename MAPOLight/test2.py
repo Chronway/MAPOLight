@@ -76,7 +76,6 @@ register_env("_", lambda _: env)
 
 
 if args.arch.lower() != "random":
-    # algo = Algorithm.from_checkpoint(args.checkpoint)
     if args.arch.lower() == "ppo":
         algo = PPOConfig().environment("_", env_config={"env_config": {"get_additional_info": True, }}).rollouts(
             num_rollout_workers=1).multi_agent(
