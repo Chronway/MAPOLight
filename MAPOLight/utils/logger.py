@@ -2,7 +2,7 @@
 """
 Created on Thu Oct 27 17:39:00 2022
 
-@author: Wang Chong
+
 """
 
 import os
