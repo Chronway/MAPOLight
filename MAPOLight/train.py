@@ -40,7 +40,7 @@ def main(run, net, pr):
     else:
         enable_cv = True
 
-    current_dir = os.path.dirname(os.path.realpath(__file__))  # 获取当前文件夹
+    current_dir = os.path.dirname(os.path.realpath(__file__))
 
     if net == "4x4":
         net_file = current_dir + '/sumo_files/4gridnet.net.xml'
@@ -72,7 +72,7 @@ def main(run, net, pr):
         use_gui=False,
         num_seconds=num_second,
         # time_to_load_vehicles=10,
-        begin_time=10,  # 原来的time_to_load_vehicles
+        begin_time=10,
         max_depart_delay=0,
         cav_env=enable_cv,  # has cav env
         collaborate=True,
@@ -89,7 +89,6 @@ def main(run, net, pr):
         config = PPOConfig()
     elif run == "A3C":
         config = A3CConfig()
-        # 有lstm的版本 测试模型时需要支持lstm的测试(没写)
         # config = A3CConfig().training(model={"use_lstm": True}) 
     elif run == "SAC":
         config = SACConfig()
@@ -100,7 +99,7 @@ def main(run, net, pr):
     config = (config.environment("net", env_config={"env_config": env_config})
               .framework("torch")
               .rollouts(rollout_fragment_length=128, num_rollout_workers=3)
-              .training(train_batch_size=12000,model={'fcnet_hiddens': [128, 128]})
+              .training(train_batch_size=12000,model={'fcnet_hiddens': [256, 256]})
               .evaluation(
         evaluation_parallel_to_training=True,
         evaluation_num_workers=2,
@@ -126,7 +125,6 @@ def main(run, net, pr):
             verbose=3,
             checkpoint_config=air.CheckpointConfig(num_to_keep=2, checkpoint_frequency=1,),
             progress_reporter=reporter,
-            # 可以手动设置保存路径
             # storage_path=f'/data/folder1/folder2'
         ),
         # tune_config=tune.TuneConfig(time_budget_s=3600 * 24 * 3)

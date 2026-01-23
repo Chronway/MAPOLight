@@ -1,4 +1,4 @@
-# 可以测试各算法的模型效果，包括随机策略
+# example:
 # python test2.py -a random -o random 
 # python test2.py -a random -o 5x5_random -n /sumo_files/5_2net.net.xml -r /sumo_files/5_2groutes.xml --cfg /sumo_files/5_2grid.sumocfg -t 4800
 # python test2.py -a ppo -c /data/lyq/cav_0.05/PPO/PPO_4x4grid_6a03f_00000_0_2023-09-11_19-14-45/checkpoint_000520/ -p 0.05 --co 
@@ -19,16 +19,16 @@ parser = argparse.ArgumentParser(
     epilog="Text at the bottom of help",
 )
 
-parser.add_argument("-a", "--arch", dest="arch", help="测试的算法", default="random", choices=['ppo', 'a3c', 'sac', 'dqn', 'random'])
-parser.add_argument("-c", "--checkpoint", dest="checkpoint", help="检查点路径")
-parser.add_argument("-o", "--output", dest="output", help="输出文件夹", default=".")
-parser.add_argument("-p", "--pr", dest="pr", type=float, help="渗透率", default=1.0)
-parser.add_argument("--co", "--collaborate", dest="collaborate", action="store_true", default=True, help="是否启用合作")
-parser.add_argument("--128width", dest="_128width", action="store_true", default=False, help="是否全连接层为128宽度")
-parser.add_argument("-n", "--net", dest="net", default="/sumo_files/moco.net.xml", help="路网文件")
-parser.add_argument("-r", "--route", dest="route", default="/sumo_files/moco_jtr_out.rou.xml", help="路由文件")
-parser.add_argument("--cfg", dest="cfg", default="/sumo_files/testmap.sumocfg", help="模拟文件")
-parser.add_argument("-t", "--time", dest="time", default=7300, type=int, help="模拟时长")
+parser.add_argument("-a", "--arch", dest="arch", help="method to test", default="random", choices=['ppo', 'a3c', 'sac', 'dqn', 'random'])
+parser.add_argument("-c", "--checkpoint", dest="checkpoint", help="path to checkpoint. e.g.: ~/ray_results/PPO/PPO_net_34ccb_00000_0_2026-01-23_18-06-38/checkpoint_000036")
+parser.add_argument("-o", "--output", dest="output", help="path to output folder", default=".")
+parser.add_argument("-p", "--pr", dest="pr", type=float, help="penetration rates", default=1.0)
+parser.add_argument("--co", "--collaborate", dest="collaborate", action="store_true", default=True, help="enable agents collaborate mode")
+parser.add_argument("--128width", dest="_128width", action="store_true", default=False, help="legacy. For running original smaller model")
+parser.add_argument("-n", "--net", dest="net", default="/sumo_files/moco.net.xml", help="network file")
+parser.add_argument("-r", "--route", dest="route", default="/sumo_files/moco_jtr_out.rou.xml", help="route file")
+parser.add_argument("--cfg", dest="cfg", default="/sumo_files/testmap.sumocfg", help="sumocfg file")
+parser.add_argument("-t", "--time", dest="time", default=7300, type=int, help="time to simulated")
 
 args = parser.parse_args()
 
@@ -45,7 +45,7 @@ elif args.arch.lower() == "sac":
 elif args.arch.lower() == "dqn":
     from ray.rllib.algorithms.apex_dqn.apex_dqn import ApexDQNConfig
 
-current_dir = "."  # 获取当前文件夹
+current_dir = "."
 
 net_file = current_dir + args.net
 rou_file = current_dir + args.route
@@ -62,7 +62,7 @@ env = MyPettingZooEnv(
         use_gui=False,
         num_seconds=args.time,
         # time_to_load_vehicles=10,
-        begin_time=10,  # 原来的time_to_load_vehicles
+        begin_time=10,
         max_depart_delay=0,
         # ====cav====
         cav_env=True if args.pr != 1 else False,
