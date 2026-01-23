@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Nov  5 21:01:07 2022
 
-
-"""
 from gymnasium import Env
 from gymnasium.core import ObsType, ActType
 
