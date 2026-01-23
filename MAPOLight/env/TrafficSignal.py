@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 18:28:44 2023
-
-
-"""
 import random
 from typing import Callable, List, Union
 import traci
