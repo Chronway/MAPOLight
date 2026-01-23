@@ -2,7 +2,7 @@
 """
 Created on Mon Oct 31 13:20:30 2022
 
-@author: Wang Chong
+
 """
 import traci
 import numpy 
