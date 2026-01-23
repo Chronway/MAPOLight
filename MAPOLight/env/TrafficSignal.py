@@ -2,7 +2,7 @@
 """
 Created on Wed Aug 16 18:28:44 2023
 
-@author: Wang Chong
+
 """
 import random
 from typing import Callable, List, Union
