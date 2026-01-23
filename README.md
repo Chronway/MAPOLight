@@ -1,7 +1,25 @@
 ﻿# **MAPOLight**
 ### This is the updated and refined implementation of the EAAI paper [*"Cooperative traffic signal control for a partially observed vehicular network using multi-agent reinforcement learning"*](https://doi.org/10.1016/j.engappai.2025.111813).
 
-if you find it useful, plese cite:
+## Abstract
+Cooperative traffic signal control aims to alleviate congestion and reduce travel times in urban environments by coordinating traffic lights. However, accurately modeling urban traffic dynamics and managing multiple intersections remain challenging tasks. Although Reinforcement Learning (RL) offers adaptability without requiring predefined traffic models, it faces challenges such as high dimensionality and data dependency, especially in real-world conditions like adverse weather or device malfunctions. In this paper, we propose a novel multi-tiered, multi-agent RL approach, named Multi-Agent Partially Observed Light (MAPOLight), designed to operate in a Vehicle-to-Infrastructure (V2I) environment with a limited number of Connected and Automated Vehicles (CAVs). The upper tier emphasizes agent collaboration by aggregating states and actions into mean values, significantly reducing state dimensionality. The lower tier employs advanced deep RL algorithms for optimization, ensuring both flexibility and scalability. Additionally, we introduce the Observation Correlation Indicator to relate CAV penetration rates (CAV P-Rates) with RL convergence. Simulation results reveal that our method offers stability and superior performance across diverse scenarios compared to traditional approaches. MAPOLight demonstrates robustness with CAV P-Rates above 20% and achieves convergence with a minimum penetration rate of 5%, outperforming existing methods. Moreover, our approach promotes smoother vehicle trajectories and exhibits strong adaptability, enabling rapid congestion relief in respond to unexpected traffic accidents. These results highlight the effectiveness and adaptability of the proposed approach.
+
+## Cite
+If you find the code useful, plese cite:
+
+@article{WANG2025111813,
+
+title = {Cooperative traffic signal control for a partially observed vehicular network using multi-agent reinforcement learning},
+
+journal = {Engineering Applications of Artificial Intelligence},
+
+volume = {160},
+
+pages = {111813},
+
+year = {2025},
+
+}
 
 ## Setup Environment
 
@@ -72,4 +90,5 @@ uv run test2.py -h
 ```
 
 The above command will generate an outputs directory in the current folder, which contains several CSV files recording simulation data.
+
 
