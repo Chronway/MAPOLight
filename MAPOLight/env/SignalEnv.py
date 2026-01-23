@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 18:28:44 2023
-
-
-"""
-
 import os, sys
 from typing import Callable, Optional, Tuple, Union
 
