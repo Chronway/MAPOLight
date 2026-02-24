@@ -56,7 +56,7 @@ uv run train.py
 Optional command-line arguments are available to perform different training configurations. For example:
 
 ```bash
-uv run train.py --arch A3C --net 5x5  # use A3C train model in 5x5 road network
+uv run train.py --arch A3C --net 4x4  # use A3C train model in 4x4 road network
 ```
 
 Training will continue indefinitely until the program is manually stopped by pressing Ctrl+C. The two best-performing checkpoints will be saved under:
@@ -90,4 +90,5 @@ uv run test2.py -h
 ```
 
 The above command will generate an outputs directory in the current folder, which contains several CSV files recording simulation data.
+
 
